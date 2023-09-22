@@ -1,0 +1,83 @@
+<html>
+
+<body>
+    <div style="width: 60%; margin: auto;">
+        <h2>LVJ Image Hoster</h2>
+        <hr />
+        <form>
+            <input id="imgFile" type="file">
+            <input value="Submit" style="float: right;" type="button" onclick="addImage()">
+        </form>
+        <p id="tips">Tips: You can also paste pictures by using Ctrl+V.</p>
+    </div>
+</body>
+
+<script type="text/javascript">
+    function showImg(url) {
+        let p = document.getElementById("tips");
+        let img = document.createElement("img"), link = document.createElement('p');
+        let oud = document.createElement('div'), br = document.createElement('br');
+        let md = document.createElement('p');
+        img.src = url; img.style = 'max-width: 100%';
+        link.innerHTML = url;
+        md.innerHTML = `![](${url})`;
+        oud.style = 'width: 95%; margin: auto; border: 1px solid black;';
+        oud.appendChild(img); oud.appendChild(link); oud.appendChild(md);
+        p.parentNode.insertBefore(oud, p); p.parentNode.insertBefore(br, p);
+    }
+    function addImage(pasteImage = undefined) {
+        if (pasteImage === undefined) {
+            var fileInput = document.getElementById('imgFile');
+            var file = fileInput.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onloadend = function () {
+                    var formData = new FormData();
+                    formData.append('image', reader.result.split(",")[1]);
+                    fetch('/upload.php', {
+                        method: 'POST',
+                        body: formData
+                    }).then(async function (response) {
+                        response = await response.json();
+                        console.log(response);
+                        if (response.success) showImg(response.url);
+                        else alert(response.msg);
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+            else alert('Select an image first!');
+        }
+        else {
+            var formData = new FormData();
+            formData.append('image', pasteImage);
+            fetch('/upload.php', {
+                method: 'POST',
+                body: formData
+            }).then(async function (response) {
+                response = await response.json();
+                if (response.success) showImg(response.url);
+                else alert(response.msg);
+            });
+        }
+    }
+</script>
+
+<script type="text/javascript">
+    document.addEventListener('paste', function (event) {
+        var items = (event.clipboardData || event.originalEvent.clipboardData).items;
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            if (item.type.indexOf('image') !== -1) {
+                var blob = item.getAsFile();
+                var reader = new FileReader();
+                reader.onloadend = function () {
+                    addImage(reader.result.split(",")[1]);
+                };
+                reader.readAsDataURL(blob);
+            }
+        }
+    });
+</script>
+
+</html>
